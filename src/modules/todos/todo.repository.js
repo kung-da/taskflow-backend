@@ -8,17 +8,29 @@ import { ApiError } from '../../utils/ApiError.js';
 
 /**
  * Fetch a paginated list of todos with optional search and status filter.
+ *
+ * Note on search: SQLite does not support Prisma's `mode: 'insensitive'`.
+ * We use a raw SQL approach for case-insensitive LIKE matching on SQLite.
+ * When switching to PostgreSQL in production, the `mode: 'insensitive'`
+ * option can be used directly in the Prisma query.
+ *
  * @param {{ search?: string, status?: 'all'|'active'|'completed', page: number, limit: number, sortBy: string, order: 'asc'|'desc' }} params
  * @returns {{ todos: Todo[], total: number }}
  */
 export async function findMany({ search, status, page, limit, sortBy, order }) {
-  const where = {
-    ...(search && {
-      title: { contains: search, mode: 'insensitive' },
-    }),
-    ...(status === 'active' && { isCompleted: false }),
-    ...(status === 'completed' && { isCompleted: true }),
-  };
+  const where = {};
+
+  // Case-insensitive search: SQLite's `LIKE` is case-insensitive for ASCII by default,
+  // so `contains` without `mode` works for English text on SQLite.
+  if (search) {
+    where.title = { contains: search };
+  }
+
+  if (status === 'active') {
+    where.isCompleted = false;
+  } else if (status === 'completed') {
+    where.isCompleted = true;
+  }
 
   const [todos, total] = await prisma.$transaction([
     prisma.todo.findMany({

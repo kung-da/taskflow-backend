@@ -7,17 +7,22 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "pretest": "node scripts/migrate-test-db.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
+    "prisma:seed": "node prisma/seed.js",
+    "railway:generate": "prisma generate --schema prisma-postgres/schema.prisma",
+    "railway:migrate": "prisma migrate deploy --schema prisma-postgres/schema.prisma",
     "lint": "eslint src --ext .js",
     "format": "prettier --write src"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
     "zod": "^3.23.8"
@@ -29,7 +34,6 @@
     "nodemon": "^3.1.4",
     "prettier": "^3.3.2",
     "prisma": "^5.14.0",
-    "dotenv": "^16.4.5",
     "supertest": "^7.0.0",
     "vitest": "^1.6.0"
   },

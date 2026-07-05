@@ -1,6 +1,6 @@
 // src/middleware/errorHandler.js
 // Centralized Express error handler — must be registered LAST in app.js.
-// Translates ApiErrors and unexpected errors into consistent HTTP responses.
+// Translates ApiErrors, Zod errors, and unexpected errors into consistent HTTP responses.
 // Never leaks stack traces to clients in production.
 
 import { ApiError } from '../utils/ApiError.js';
@@ -14,6 +14,26 @@ export function errorHandler(err, req, res, next) {
         message: err.message,
         code: err.code,
         ...(err.field && { field: err.field }),
+      },
+    });
+  }
+
+  // Malformed JSON body — Express throws a SyntaxError with status 400
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({
+      error: {
+        message: 'Invalid JSON in request body',
+        code: 'PARSE_ERROR',
+      },
+    });
+  }
+
+  // Payload too large
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      error: {
+        message: 'Request body too large',
+        code: 'PAYLOAD_TOO_LARGE',
       },
     });
   }

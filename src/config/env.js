@@ -1,6 +1,14 @@
 // src/config/env.js
-// Loads and validates all required environment variables.
+// Loads .env file, then validates all required environment variables.
 // Fails fast at startup if anything critical is missing.
+// Must be imported before anything that reads process.env.
+
+import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: join(__dirname, '..', '..', '.env') });
 
 const required = ['DATABASE_URL'];
 

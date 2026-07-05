@@ -13,11 +13,15 @@ import {
 
 /**
  * List todos — validates query params, delegates to repository.
+ * Returns todos with the validated pagination params so the controller
+ * can build the correct meta response.
  * @param {object} query  Raw query string params from Express
+ * @returns {{ todos: Todo[], total: number, page: number, limit: number }}
  */
 export async function listTodos(query) {
   const params = validate(listTodosQuerySchema, query);
-  return todoRepository.findMany(params);
+  const { todos, total } = await todoRepository.findMany(params);
+  return { todos, total, page: params.page, limit: params.limit };
 }
 
 /**

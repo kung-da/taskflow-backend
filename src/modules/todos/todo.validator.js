@@ -64,9 +64,9 @@ export function validate(schema, data) {
  * @returns {number}
  */
 export function validateId(id) {
-  const parsed = parseInt(String(id), 10);
-  if (isNaN(parsed) || parsed < 1) {
-    throw new ApiError(400, 'Invalid id — must be a positive integer', 'VALIDATION_ERROR', 'id');
+  const value = String(id).trim();
+  if (!/^[1-9]\d*$/.test(value)) {
+    throw new ApiError(400, 'Invalid id - must be a positive integer', 'VALIDATION_ERROR', 'id');
   }
-  return parsed;
+  return Number(value);
 }

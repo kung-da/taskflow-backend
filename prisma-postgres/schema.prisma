@@ -1,6 +1,5 @@
-// Prisma schema — single source of truth for the database schema.
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

@@ -10,15 +10,14 @@ import * as todoService from './todo.service.js';
  */
 export async function getAll(req, res, next) {
   try {
-    const { todos, total } = await todoService.listTodos(req.query);
-    const { page = 1, limit = 10 } = req.query;
+    const result = await todoService.listTodos(req.query);
     res.json({
-      data: todos,
+      data: result.todos,
       meta: {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / Number(limit)),
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: Math.ceil(result.total / result.limit),
       },
     });
   } catch (err) {
