@@ -235,15 +235,24 @@ prisma/
 - SQLite keeps local setup simple for reviewers.
 - `PATCH /api/todos/:id/toggle` keeps the common completion action explicit and small.
 
-## Deploy Backend To Railway
+## Deploy Backend To Railway With Supabase
 
-This repo is local-dev friendly with SQLite, but Railway should use PostgreSQL. The repo includes a separate PostgreSQL Prisma schema at `prisma-postgres/schema.prisma` and a `railway.json` file for Railway deployment.
+This repo is local-dev friendly with SQLite, but Railway production deployment should use PostgreSQL. The repo includes a separate PostgreSQL Prisma schema at `prisma-postgres/schema.prisma` and a `railway.json` file for Railway deployment.
 
 Railway will use:
 
 - Build command: `npm ci && npx prisma generate --schema prisma-postgres/schema.prisma`
 - Start command: `npx prisma migrate deploy --schema prisma-postgres/schema.prisma && npm start`
 - Health check: `/health`
+
+For Supabase, the PostgreSQL schema uses both:
+
+```prisma
+url       = env("DATABASE_URL")
+directUrl = env("DIRECT_URL")
+```
+
+Use `DATABASE_URL` for the Supabase transaction-mode pooler and `DIRECT_URL` for the session-mode/direct migration connection.
 
 ### 1. Create A Backend GitHub Repository
 
@@ -268,26 +277,29 @@ git push -u origin main
 
 Railway supports config-as-code with `railway.json`, so the build/start settings in this repo will be used during deploy. See Railway's official config docs: https://docs.railway.com/config-as-code
 
-### 3. Add PostgreSQL On Railway
+### 3. Create Supabase Database
 
-1. In the Railway project, click `New`.
-2. Choose `Database`.
-3. Choose `PostgreSQL`.
-4. Railway will create a `DATABASE_URL` variable for the Postgres service.
+1. Create a Supabase project.
+2. Open the database connection settings.
+3. Copy the transaction-mode pooler URL for runtime.
+4. Copy the session-mode pooler or direct URL for migrations.
 
-If the backend service does not automatically receive it, add a variable in the backend service:
+Example Railway variables:
 
 ```env
-DATABASE_URL=${{Postgres.DATABASE_URL}}
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:6543/postgres?pgbouncer=true
+DIRECT_URL=postgresql://USER:PASSWORD@HOST:5432/postgres
 ```
 
-The exact variable reference can differ based on the Postgres service name in your Railway project.
+Do not commit these values to git.
 
-### 4. Add Backend Variables
+### 4. Add Backend Variables On Railway
 
-In the backend service variables, set:
+In the Railway backend service variables, set:
 
 ```env
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:6543/postgres?pgbouncer=true
+DIRECT_URL=postgresql://USER:PASSWORD@HOST:5432/postgres
 NODE_ENV=production
 CORS_ORIGIN=https://your-frontend-domain.vercel.app
 ```
@@ -334,3 +346,4 @@ Redeploy the frontend after changing this variable.
 - Railway uses `prisma-postgres/schema.prisma`.
 - Do not run the SQLite migrations in `prisma/migrations` against Railway PostgreSQL.
 - The PostgreSQL migration used by Railway lives in `prisma-postgres/migrations`.
+- If you paste database credentials into a chat, issue tracker, or screenshot, rotate the Supabase database password afterward.
