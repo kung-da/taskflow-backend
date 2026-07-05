@@ -1,134 +1,143 @@
 # TaskFlow Backend
 
-REST API for the TaskFlow todo app, built with Express, Prisma, SQLite, and Zod.
+Backend REST API cho ứng dụng Todo List, xây dựng bằng Node.js, Express, Prisma, SQLite cho local/Docker và PostgreSQL cho deploy Railway + Supabase.
 
-## Features
+## Chức Năng
 
-- CRUD API for todos
-- Toggle complete/incomplete endpoint
-- Search, status filter, pagination, and sorting
-- Request validation with clear error responses
-- Centralized error handling and 404 handling
-- SQLite local database via Prisma
-- Unit and integration tests with Vitest and Supertest
+- Xem danh sách công việc
+- Thêm công việc mới
+- Chỉnh sửa công việc
+- Xóa công việc
+- Đánh dấu hoàn thành/chưa hoàn thành
+- Tìm kiếm theo tiêu đề
+- Lọc theo trạng thái `all`, `active`, `completed`
+- Validate dữ liệu không hợp lệ
+- Trả lỗi theo format thống nhất
 
-## Tech Stack
+## Công Nghệ
 
 - Node.js 18+
 - Express
 - Prisma ORM
-- SQLite
-- Zod
+- SQLite cho local/Docker
+- PostgreSQL cho Railway + Supabase
+- Zod validation
 - Vitest + Supertest
-- ESLint + Prettier
+- Docker
 
-## Setup
+## Chạy Bằng Docker
 
-```bash
-npm install
-copy .env.example .env
-npx prisma migrate deploy
-npm run dev
-```
+Yêu cầu: đã cài Docker Desktop.
 
-The API runs at `http://localhost:4000` by default.
-
-Health check:
-
-```bash
-curl http://localhost:4000/health
-```
-
-## Run With Docker
-
-From this backend repo:
+Từ thư mục backend:
 
 ```bash
 docker compose -f docker-compose.backend.yml up --build
 ```
 
-The API will be available at:
+API chạy tại:
 
 ```text
 http://localhost:4000
 ```
 
-Health check:
+Kiểm tra server:
 
 ```text
 http://localhost:4000/health
 ```
 
-Stop and remove the container:
+Kết quả mong đợi:
+
+```json
+{ "status": "ok" }
+```
+
+Dừng container:
 
 ```bash
 docker compose -f docker-compose.backend.yml down
 ```
 
-The Docker setup uses SQLite inside a Docker volume named `backend-db`.
+Docker backend dùng SQLite trong Docker volume `backend-db`, nên dữ liệu vẫn còn sau khi restart container. Nếu muốn xóa sạch dữ liệu Docker:
 
-## Environment Variables
+```bash
+docker compose -f docker-compose.backend.yml down -v
+```
 
-Create `.env` from `.env.example`.
+## Chạy Không Dùng Docker
 
-| Variable | Example | Purpose |
-|---|---|---|
-| `DATABASE_URL` | `file:./dev.db` | SQLite database path |
-| `PORT` | `4000` | API server port |
-| `CORS_ORIGIN` | `http://localhost:5173` | Allowed frontend origin |
-| `NODE_ENV` | `development` | Runtime environment |
+Tạo file `.env` từ `.env.example`:
 
-## Scripts
+```bash
+copy .env.example .env
+```
 
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Start API with nodemon |
-| `npm start` | Start API with Node |
-| `npm test` | Run backend tests |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run lint` | Run ESLint |
-| `npm run format` | Format source files |
-| `npm run prisma:migrate` | Create/apply Prisma dev migration |
-| `npm run prisma:generate` | Generate Prisma client |
-| `npm run prisma:studio` | Open Prisma Studio |
-| `npm run prisma:seed` | Seed sample data |
-| `npm run railway:generate` | Generate Prisma client from the PostgreSQL Railway schema |
-| `npm run railway:migrate` | Apply PostgreSQL migrations for Railway |
+Cài dependencies và chạy migration:
+
+```bash
+npm install
+npx prisma migrate deploy
+npm run dev
+```
+
+API chạy tại:
+
+```text
+http://localhost:4000
+```
+
+## Biến Môi Trường Local
+
+File `.env` khi chạy local SQLite:
+
+```env
+DATABASE_URL="file:./dev.db"
+PORT=4000
+CORS_ORIGIN=http://localhost:5173
+NODE_ENV=development
+```
+
+Không cần `DIRECT_URL` khi chạy local SQLite.
 
 ## API Endpoints
 
-Base path: `/api/todos`
+Base path:
 
-| Method | Path | Description |
+```text
+/api/todos
+```
+
+| Method | Endpoint | Mô tả |
 |---|---|---|
-| `GET` | `/api/todos` | List todos |
-| `GET` | `/api/todos/:id` | Get one todo |
-| `POST` | `/api/todos` | Create todo |
-| `PUT` | `/api/todos/:id` | Update todo |
-| `PATCH` | `/api/todos/:id/toggle` | Toggle completion |
-| `DELETE` | `/api/todos/:id` | Delete todo |
-| `GET` | `/health` | Health check |
+| `GET` | `/api/todos` | Lấy danh sách công việc |
+| `GET` | `/api/todos/:id` | Lấy một công việc |
+| `POST` | `/api/todos` | Tạo công việc |
+| `PUT` | `/api/todos/:id` | Cập nhật công việc |
+| `PATCH` | `/api/todos/:id/toggle` | Đổi trạng thái hoàn thành |
+| `DELETE` | `/api/todos/:id` | Xóa công việc |
+| `GET` | `/health` | Kiểm tra server |
 
-List query params:
+Query khi lấy danh sách:
 
-| Param | Values | Default |
+| Query | Giá trị | Mặc định |
 |---|---|---|
-| `search` | Any string | none |
+| `search` | Chuỗi bất kỳ | Không có |
 | `status` | `all`, `active`, `completed` | `all` |
-| `page` | Positive integer | `1` |
-| `limit` | Positive integer up to `100` | `10` |
+| `page` | Số nguyên dương | `1` |
+| `limit` | Số nguyên dương, tối đa `100` | `10` |
 | `sortBy` | `createdAt`, `updatedAt`, `title` | `createdAt` |
 | `order` | `asc`, `desc` | `desc` |
 
-Example:
+Ví dụ:
 
 ```bash
 curl "http://localhost:4000/api/todos?search=milk&status=active&page=1&limit=10"
 ```
 
-## Request Examples
+## Ví Dụ Request
 
-Create todo:
+Tạo công việc:
 
 ```bash
 curl -X POST http://localhost:4000/api/todos ^
@@ -136,7 +145,7 @@ curl -X POST http://localhost:4000/api/todos ^
   -d "{\"title\":\"Buy milk\",\"description\":\"2 bottles\"}"
 ```
 
-Update todo:
+Cập nhật công việc:
 
 ```bash
 curl -X PUT http://localhost:4000/api/todos/1 ^
@@ -144,21 +153,21 @@ curl -X PUT http://localhost:4000/api/todos/1 ^
   -d "{\"title\":\"Buy oat milk\",\"isCompleted\":false}"
 ```
 
-Toggle todo:
+Đánh dấu hoàn thành/chưa hoàn thành:
 
 ```bash
 curl -X PATCH http://localhost:4000/api/todos/1/toggle
 ```
 
-Delete todo:
+Xóa công việc:
 
 ```bash
 curl -X DELETE http://localhost:4000/api/todos/1
 ```
 
-## Response Shape
+## Format Response
 
-Success:
+Thành công:
 
 ```json
 {
@@ -173,7 +182,7 @@ Success:
 }
 ```
 
-List responses also include `meta`:
+Danh sách có thêm `meta`:
 
 ```json
 {
@@ -187,7 +196,7 @@ List responses also include `meta`:
 }
 ```
 
-Error:
+Lỗi:
 
 ```json
 {
@@ -199,103 +208,76 @@ Error:
 }
 ```
 
-## Tests
+## Xử Lý Dữ Liệu Không Hợp Lệ
+
+Backend validate các trường hợp:
+
+- Thiếu `title`
+- `title` rỗng hoặc chỉ có khoảng trắng
+- `title` dài hơn 200 ký tự
+- `description` dài hơn 1000 ký tự
+- `id` không hợp lệ, ví dụ `abc`, `1.5`, số âm
+- Query `status`, `page`, `limit`, `sortBy`, `order` không hợp lệ
+
+## Test
 
 ```bash
 npm test
 ```
 
-The `pretest` script applies Prisma migrations to the test SQLite database before Vitest runs.
+Kết quả đã kiểm tra:
 
-Current verified result: `65 tests passed`.
+```text
+65 tests passed
+```
 
-## Project Structure
+## Cấu Trúc Thư Mục
 
 ```text
 src/
-  config/             Environment loading
+  config/             Đọc và validate biến môi trường
   db/                 Prisma client
   middleware/         Logger, 404, error handler
-  modules/todos/      Routes, controller, service, repository, validation
-  utils/              Shared API error class
+  modules/todos/      Routes, controller, service, repository, validator
+  utils/              ApiError dùng chung
 tests/
-  unit/               Service tests
-  integration/        API route tests
+  unit/               Test service
+  integration/        Test API endpoint
 prisma/
-  schema.prisma       Database schema
-  migrations/         Versioned migrations
-  seed.js             Seed script
+  schema.prisma       Schema SQLite cho local/Docker
+  migrations/         Migration SQLite
+prisma-postgres/
+  schema.prisma       Schema PostgreSQL cho Railway + Supabase
+  migrations/         Migration PostgreSQL
 ```
 
-## Design Notes
+## Deploy Railway + Supabase
 
-- Controllers only map HTTP input/output.
-- Services own validation orchestration and business flow.
-- Repositories are the only layer that talks to Prisma.
-- SQLite keeps local setup simple for reviewers.
-- `PATCH /api/todos/:id/toggle` keeps the common completion action explicit and small.
+Local/Docker dùng SQLite. Khi deploy Railway, backend dùng PostgreSQL trên Supabase qua schema riêng:
 
-## Deploy Backend To Railway With Supabase
-
-This repo is local-dev friendly with SQLite, but Railway production deployment should use PostgreSQL. The repo includes a separate PostgreSQL Prisma schema at `prisma-postgres/schema.prisma` and a `railway.json` file for Railway deployment.
-
-Railway will use:
-
-- Build command: `npm ci && npx prisma generate --schema prisma-postgres/schema.prisma`
-- Start command: `npx prisma migrate deploy --schema prisma-postgres/schema.prisma && npm start`
-- Health check: `/health`
-
-For Supabase, the PostgreSQL schema uses both:
-
-```prisma
-url       = env("DATABASE_URL")
-directUrl = env("DIRECT_URL")
+```text
+prisma-postgres/schema.prisma
 ```
 
-Use `DATABASE_URL` for the Supabase transaction-mode pooler and `DIRECT_URL` for the session-mode/direct migration connection.
+Railway dùng file:
 
-### 1. Create A Backend GitHub Repository
+```text
+railway.json
+```
 
-Push only this backend folder as its own repo:
+Build command:
 
 ```bash
-cd taskflow-backend
-git init
-git add .
-git commit -m "initial backend"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/taskflow-backend.git
-git push -u origin main
+npm ci && npx prisma generate --schema prisma-postgres/schema.prisma
 ```
 
-### 2. Create Railway Project
+Start command:
 
-1. Open Railway.
-2. Click `New Project`.
-3. Choose `Deploy from GitHub repo`.
-4. Select the backend repo.
-
-Railway supports config-as-code with `railway.json`, so the build/start settings in this repo will be used during deploy. See Railway's official config docs: https://docs.railway.com/config-as-code
-
-### 3. Create Supabase Database
-
-1. Create a Supabase project.
-2. Open the database connection settings.
-3. Copy the transaction-mode pooler URL for runtime.
-4. Copy the session-mode pooler or direct URL for migrations.
-
-Example Railway variables:
-
-```env
-DATABASE_URL=postgresql://USER:PASSWORD@HOST:6543/postgres?pgbouncer=true
-DIRECT_URL=postgresql://USER:PASSWORD@HOST:5432/postgres
+```bash
+npx prisma migrate deploy --schema prisma-postgres/schema.prisma && npm start
 ```
 
-Do not commit these values to git.
-
-### 4. Add Backend Variables On Railway
-
-In the Railway backend service variables, set:
+Biến môi trường cần set trên Railway:
 
 ```env
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:6543/postgres?pgbouncer=true
@@ -304,46 +286,16 @@ NODE_ENV=production
 CORS_ORIGIN=https://your-frontend-domain.vercel.app
 ```
 
-Railway injects `PORT` automatically. The app already reads `process.env.PORT`, so you do not need to hardcode it.
+Ghi chú:
 
-During early testing, you can temporarily set:
+- `DATABASE_URL` dùng Supabase transaction pooler cho runtime.
+- `DIRECT_URL` dùng session/direct connection cho Prisma migration.
+- Không commit `.env` thật lên GitHub.
+- Nếu lộ database password, hãy reset password trong Supabase và cập nhật lại biến môi trường trên Railway.
 
-```env
-CORS_ORIGIN=http://localhost:5173
-```
+## Checklist Yêu Cầu
 
-Then update it after the frontend is deployed.
-
-### 5. Deploy
-
-Push to GitHub. Railway will deploy automatically.
-
-After deployment, open:
-
-```text
-https://your-railway-service.up.railway.app/health
-```
-
-Expected response:
-
-```json
-{ "status": "ok" }
-```
-
-### 6. Connect Frontend
-
-In the frontend hosting provider, set:
-
-```env
-VITE_API_BASE_URL=https://your-railway-service.up.railway.app/api
-```
-
-Redeploy the frontend after changing this variable.
-
-### Railway Notes
-
-- Keep using the default `prisma/schema.prisma` for local SQLite development.
-- Railway uses `prisma-postgres/schema.prisma`.
-- Do not run the SQLite migrations in `prisma/migrations` against Railway PostgreSQL.
-- The PostgreSQL migration used by Railway lives in `prisma-postgres/migrations`.
-- If you paste database credentials into a chat, issue tracker, or screenshot, rotate the Supabase database password afterward.
+- [x] Tổ chức mã nguồn rõ ràng, dễ đọc và dễ bảo trì
+- [x] Xử lý các trường hợp dữ liệu không hợp lệ
+- [x] Có README hướng dẫn cách chạy dự án
+- [x] Có hướng dẫn chạy bằng Docker
